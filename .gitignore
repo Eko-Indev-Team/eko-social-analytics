@@ -1,0 +1,85 @@
+# ---------------------------------------------------------------- secrets / local config
+# Real credentials live in .env files — only the placeholder .env.example files are committed.
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.kdbx
+id_rsa*
+id_ed25519*
+*.ppk
+secrets/
+credentials*.json
+service-account*.json
+client_secret*.json
+.npmrc
+.pypirc
+.netrc
+.htpasswd
+
+# Database dumps and local databases (may contain real leads / PII)
+*.dump
+*.backup
+*.bak
+*.sql.gz
+*.sqlite
+*.sqlite3
+*.db
+# Exports that may contain lead names / phone numbers
+*.xlsx
+*.xls
+*.csv
+!**/fixtures/**/*.csv
+
+# Local tooling (Claude Code launch configs, editor settings)
+.claude/
+.vscode/
+.idea/
+
+# ---------------------------------------------------------------- frontend (Node / Vite)
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+*.local
+
+# ---------------------------------------------------------------- backend (Python)
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Private PostgreSQL cluster created by `python -m scripts.local_postgres` (contains the database itself)
+backend/.pgdata/
+backend/.pgdata.log
+
+# ---------------------------------------------------------------- misc
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# Celery beat schedule state (local)
+backend/.celerybeat/
+celerybeat-schedule*
+
+# AI evaluation outputs (local)
+backend/evaluation/results/
+
+# Deployment secrets and local backups
+deploy/.env.production
+backups/
+
+# AdMarketer reference data from the handover (Eko internal: CSP locations, ad targeting, creatives). Never commit.
+backend/.data/

@@ -1,0 +1,37 @@
+# Build context = repository root. Never send secrets, local environments, data or VCS history to the builder.
+.git/
+.github/
+.claude/
+.vscode/
+.idea/
+design-reference/
+docs/
+deploy/
+**/.env
+**/.env.*
+!**/.env.example
+**/*.pem
+**/*.key
+**/*.log
+
+# backend
+backend/.venv/
+backend/venv/
+backend/.pgdata/
+backend/.data/
+backend/.celerybeat/
+**/celerybeat-schedule*
+**/__pycache__/
+**/*.py[cod]
+backend/.pytest_cache/
+backend/.mypy_cache/
+backend/.ruff_cache/
+backend/evaluation/results/
+backend/tests/
+
+# frontend
+frontend/node_modules/
+frontend/dist/
+frontend/coverage/
+**/*.local
+**/*.tsbuildinfo

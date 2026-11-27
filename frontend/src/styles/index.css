@@ -1,0 +1,126 @@
+/* Brand theme: colours, fonts, icon class, scrollbars, both themes. Copied unchanged from brand-kit/theme.css;
+   fonts are loaded by the <link> tags in index.html. */
+@import './theme.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Root size: the brand kit sets 17px (theme.css, kept unchanged). SocialBoard used 16px (2026-10-12); 14px since
+   2026-11-26 because the UI looked too big at 100% browser zoom, and 13px later the same day ("thoda aur chhota").
+   Everything is in rem, so this one value scales the whole UI. */
+html {
+  font-size: 13px;
+}
+
+@layer base {
+  html,
+  body {
+    @apply bg-surface-canvas text-text-primary antialiased;
+  }
+  /* Inter character variants for metric values */
+  body {
+    font-feature-settings: 'cv01', 'cv11';
+  }
+  /* Every data table: each row (including the last) has a visible bottom border. Overrides the fainter per-table
+     row borders and `last:border-b-0`; collapsed borders keep a divide-y top border and this one from doubling. */
+  table {
+    border-collapse: collapse;
+  }
+  tbody > tr {
+    border-bottom: 1px solid var(--app-border-strong) !important;
+  }
+  /* Every data table: a coloured header row (a tint of the theme's primary colour), so headers stand out from the
+     rows. !important beats the per-table header classes. */
+  thead > tr {
+    background-color: color-mix(in srgb, var(--app-primary) 16%, var(--app-surface)) !important;
+    border-bottom: 1px solid color-mix(in srgb, var(--app-primary) 40%, var(--app-surface)) !important;
+  }
+  thead th {
+    background-color: transparent !important;
+    color: var(--table-head-text) !important;
+    font-weight: 700 !important;
+  }
+  :root,
+  [data-theme='dark'] {
+    --table-head-text: #7dd3fc; /* sky-300 on the dark tint */
+  }
+  [data-theme='light'] {
+    --table-head-text: #094053; /* Eko teal on the light tint */
+  }
+  :focus-visible {
+    outline: 2px solid var(--eko-gold);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* Size, line height and alignment come from theme.css's .material-symbols-outlined; text-[…] utilities still
+     resize individual icons. */
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400;
+    user-select: none;
+  }
+  .icon-filled {
+    font-variation-settings: 'FILL' 1, 'wght' 400;
+  }
+
+  /* Instagram's brand gradient, used sparingly as a hint of the platform (profile ring, greeting underline). */
+  .ig-gradient {
+    background: linear-gradient(45deg, #feda75, #fa7e1e, #d62976, #962fbf, #4f5bd5);
+  }
+  .ig-gradient-text {
+    /* Lighter tints of Instagram's orange, pink and purple so small text stays readable on the dark sidebar. */
+    background: linear-gradient(90deg, #fdba74, #f9a8d4, #d8b4fe);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  /* Instagram-gradient top edge on a card: a thin coloured line like a story bar. */
+  .ig-top-edge {
+    position: relative;
+    overflow: hidden;
+  }
+  .ig-top-edge::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background: linear-gradient(90deg, #feda75, #fa7e1e, #d62976, #962fbf, #4f5bd5);
+  }
+
+  .tnum {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum', 'cv01';
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* Raised, 3D-looking cards and panels (2026-11-26: "cards should stand out from the background, like 3D").
+   Overrides the brand kit's card shadow (none in dark, a hairline in light) with a layered one: a light top edge,
+   a close contact shadow and a soft far shadow. Every `shadow-card` user picks it up; the selector below also gives
+   it to bordered rounded panels that never asked for a shadow. Unlayered and after theme.css, so these win. */
+:root,
+:root[data-theme='dark'] {
+  --app-shadow-card: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 1px 2px rgba(0, 0, 0, 0.5), 0 6px 14px -4px rgba(0, 0, 0, 0.55),
+    0 22px 40px -18px rgba(0, 0, 0, 0.85);
+}
+:root[data-theme='light'] {
+  --app-shadow-card: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 1px 2px rgba(12, 37, 49, 0.12), 0 8px 16px -6px rgba(12, 37, 49, 0.16),
+    0 24px 44px -18px rgba(12, 37, 49, 0.4);
+}
+:is(.bg-surface-card, .bg-slate-900).border:is(.rounded-xl, .rounded-2xl) {
+  box-shadow: var(--app-shadow-card);
+}
+
+/* KPI tiles keep the raised card shadow and add a glow in their own colour on hover (KpiCard sets --kpi-tone). */
+.kpi-card:hover {
+  box-shadow: var(--app-shadow-card), 0 18px 36px -12px color-mix(in srgb, var(--kpi-tone) 70%, transparent);
+}

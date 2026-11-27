@@ -1,0 +1,7 @@
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.woff2 binary
+*.ico binary
+# Brand kit logo: stored byte-for-byte as supplied (CRLF line endings), never normalised.
+frontend/public/eko-wordmark.svg binary

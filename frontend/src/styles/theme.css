@@ -1,0 +1,228 @@
+/* ===========================================================================
+   AutoGMap / Eko theme — copy this file as is.
+
+   Taken from AutoGMap's frontend/src/index.css (2026-10-12). Two layers:
+
+   1. SEMANTIC TOKENS (--app-*) — use these in any stack (plain CSS, CSS
+      modules, styled-components, MUI, etc.). Dark is the default; light
+      applies with <html data-theme="light">.
+   2. TAILWIND v4 LAYER — only if the project uses Tailwind v4. It sets the
+      fonts and re-themes Tailwind's own slate/sky/emerald/rose/amber colours
+      for light mode exactly as AutoGMap does, so the same class names
+      (bg-slate-900, text-sky-400 …) look identical.
+
+   Fonts are loaded in fonts.html (paste into <head>).
+   =========================================================================== */
+
+
+/* ---------------------------------------------------------------------------
+   1. SEMANTIC TOKENS
+   --------------------------------------------------------------------------- */
+:root {
+  /* Brand — the same in both themes */
+  --eko-gold: #f9ab10;          /* primary accent: active state, highlights, focus */
+  --eko-gold-hover: #e09706;
+  --eko-teal: #094053;          /* primary action in light mode */
+  --eko-navy: #0c2531;          /* deepest ink, sidebar end */
+  --eko-hero-from: #0a3543;     /* sidebar / hero gradient, 175deg */
+  --eko-hero-to: #0c2531;
+
+  /* Type */
+  --font-sans: 'Inter', 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-heading: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Consolas, monospace;
+  --font-size-root: 17px;       /* html font-size; everything scales in rem */
+
+  /* DARK (default) — Tailwind's slate ramp */
+  --app-bg: #020617;            /* page            (slate-950) */
+  --app-surface: #0f172a;       /* cards, header   (slate-900) */
+  --app-surface-2: #1e293b;     /* hover, inset    (slate-800) */
+  --app-border: #1e293b;        /* borders         (slate-800) */
+  --app-border-strong: #334155; /* inputs          (slate-700) */
+  --app-text: #f1f5f9;          /* body / headings (slate-100) */
+  --app-text-2: #cbd5e1;        /* secondary       (slate-300) */
+  --app-muted: #94a3b8;         /* labels          (slate-400) */
+  --app-subtle: #64748b;        /* hints           (slate-500) */
+
+  --app-primary: #0284c7;       /* buttons         (sky-600)   */
+  --app-primary-hover: #0ea5e9; /*                 (sky-500)   */
+  --app-primary-text: #ffffff;
+  --app-link: #38bdf8;          /*                 (sky-400)   */
+
+  --app-success: #34d399;       /* emerald-400 */
+  --app-success-bg: #064e3b66;  /* emerald-900 @40% */
+  --app-success-solid: #059669; /* emerald-600: "Approve" buttons */
+  --app-warning: #fbbf24;       /* amber-400 */
+  --app-warning-bg: #78350f66;  /* amber-900 @40% */
+  --app-danger: #fb7185;        /* rose-400 */
+  --app-danger-bg: #88133766;   /* rose-900 @40% */
+
+  --app-focus-ring: 0 0 0 3px #f9ab1029;
+  --app-radius: 0.5rem;         /* cards (rounded-lg) */
+  --app-radius-sm: 0.25rem;     /* buttons, inputs (rounded) */
+  --app-shadow-card: none;
+
+  /* Charts — reserved status colours */
+  --chart-good: #0ca30c;
+  --chart-warning: #fab219;
+  --chart-critical: #d03b3b;
+  --chart-blocked: #9085e9;
+  --chart-muted: #64748b;
+  --chart-track: #1e293b;
+  --chart-accent: #0891b2;
+
+  /* Scrollbars */
+  --scroll-track: #0b1222;
+  --scroll-thumb: #475569;
+  --scroll-thumb-hover: #64748b;
+}
+
+:root[data-theme="light"] {
+  /* LIGHT — Eko's own palette (about.eko.in) */
+  --app-bg: #e9f0f4;            /* teal-tinted page, not flat grey */
+  --app-surface: #ffffff;
+  --app-surface-2: #d5e3e9;
+  --app-border: #dbe7ec;
+  --app-border-strong: #bdd1da;
+  --app-text: #0c2531;
+  --app-text-2: #1d4859;
+  --app-muted: #46626f;
+  --app-subtle: #5f7a86;
+
+  --app-primary: #094053;       /* Eko teal */
+  --app-primary-hover: #16435a;
+  --app-primary-text: #ffffff;
+  --app-link: #0f5f78;
+
+  --app-success: #047857;
+  --app-success-bg: #cdf0de;
+  --app-success-solid: #047857;
+  --app-warning: #9c6a06;
+  --app-warning-bg: #fbeac4;
+  --app-danger: #be123c;
+  --app-danger-bg: #fde0e4;
+
+  --app-shadow-card: 0 1px 2px #0c25310f, 0 1px 3px #0c25310a;
+
+  --chart-blocked: #4a3aa7;
+  --chart-muted: #8096a6;
+  --chart-track: #e2e8f0;
+  --chart-accent: #0e7490;
+
+  --scroll-track: #e2ecf1;
+  --scroll-thumb: #7f9cab;
+  --scroll-thumb-hover: #5f7f8f;
+}
+
+html { font-size: var(--font-size-root); }
+body {
+  font-family: var(--font-sans);
+  background-color: var(--app-bg);
+  color: var(--app-text);
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); }
+code, kbd, samp, pre, .font-mono-code { font-family: var(--font-mono); }
+
+/* Material Symbols icons: <span class="material-symbols-outlined">home</span> */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal; font-style: normal; font-size: 18px; line-height: 1;
+  display: inline-block; white-space: nowrap; word-wrap: normal; direction: ltr;
+  -webkit-font-feature-settings: 'liga'; -webkit-font-smoothing: antialiased;
+  vertical-align: middle;
+}
+
+/* Gold focus ring (light theme uses it on inputs) */
+:root[data-theme="light"] input:focus,
+:root[data-theme="light"] select:focus,
+:root[data-theme="light"] textarea:focus {
+  border-color: var(--eko-gold) !important;
+  box-shadow: var(--app-focus-ring);
+}
+
+/* Scrollbars: wide and contrasting enough to be found */
+::-webkit-scrollbar { width: 12px; height: 12px; }
+::-webkit-scrollbar-track { background: var(--scroll-track); }
+::-webkit-scrollbar-thumb {
+  background: var(--scroll-thumb); border: 3px solid var(--scroll-track);
+  border-radius: 8px; min-height: 40px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--scroll-thumb-hover); }
+* { scrollbar-width: auto; scrollbar-color: var(--scroll-thumb) var(--scroll-track); }
+
+/* Theme switch fades rather than snaps; inputs left out so typing never lags */
+body, aside, header { transition: background-color .18s ease, color .18s ease, border-color .18s ease; }
+
+
+/* ---------------------------------------------------------------------------
+   2. TAILWIND v4 LAYER — delete this section if the project has no Tailwind.
+   Put `@import "tailwindcss";` above everything in the project's main CSS,
+   then this. Dark uses Tailwind's default colours untouched.
+   --------------------------------------------------------------------------- */
+@theme {
+  --font-sans: 'Inter', 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-heading: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Consolas, monospace;
+}
+
+:root[data-theme="light"] {
+  --color-slate-950: #e9f0f4;  --color-slate-900: #ffffff;  --color-slate-800: #d5e3e9;
+  --color-slate-700: #bdd1da;  --color-slate-600: #9cb6c2;  --color-slate-500: #5f7a86;
+  --color-slate-400: #46626f;  --color-slate-300: #1d4859;  --color-slate-200: #0c2531;
+  --color-slate-100: #071d26;  --color-slate-50:  #05161d;
+
+  --color-sky-700: #062e3b;  --color-sky-600: #094053;  --color-sky-500: #16435a;
+  --color-sky-400: #0f5f78;  --color-sky-300: #094053;  --color-sky-200: #062e3b;
+  --color-sky-100: #04222c;  --color-sky-950: #e8f2f6;  --color-sky-900: #d2e6ee;
+  --color-sky-800: #a3c7d5;
+
+  --color-emerald-950: #e9faf1;  --color-emerald-900: #cdf0de;  --color-emerald-800: #86d9b0;
+  --color-emerald-500: #047857;  --color-emerald-400: #04785a;  --color-emerald-300: #045c46;
+  --color-emerald-200: #033f32;  --color-emerald-100: #022e25;
+
+  --color-rose-950: #fef0f2;  --color-rose-900: #fde0e4;  --color-rose-800: #f5a6b1;
+  --color-rose-500: #c81e43;  --color-rose-400: #be123c;  --color-rose-300: #9f1239;
+  --color-rose-200: #7f1d2e;  --color-rose-100: #63141f;
+
+  --color-amber-950: #fdf6e7;  --color-amber-900: #fbeac4;  --color-amber-800: #f0c96f;
+  --color-amber-400: #9c6a06;  --color-amber-300: #7d5405;  --color-amber-200: #5e3f04;
+  --color-amber-100: #4a3103;
+
+  --color-purple-950: #f7f2fe;  --color-purple-900: #ece0fb;  --color-purple-800: #cfb0f5;
+  --color-purple-400: #7128be;  --color-purple-300: #5b21b6;  --color-purple-200: #46157f;
+  --color-purple-100: #360f63;
+}
+
+/* Light theme: a deep-teal sidebar with gold as the active accent */
+:root[data-theme="light"] aside {
+  background: linear-gradient(175deg, var(--eko-hero-from) 0%, var(--eko-hero-to) 100%);
+  border-right-color: #06222c;
+}
+:root[data-theme="light"] aside .text-slate-400 { color: #94b6c3; }
+:root[data-theme="light"] aside .text-slate-500 { color: #7fa4b3; }
+:root[data-theme="light"] aside .text-slate-100,
+:root[data-theme="light"] aside .text-slate-200,
+:root[data-theme="light"] aside .text-slate-300 { color: #f2f8fa; }
+:root[data-theme="light"] aside [class*="bg-slate-800"] { background-color: #ffffff14; }
+:root[data-theme="light"] aside [class*="border-slate-800"],
+:root[data-theme="light"] aside [class*="border-slate-700"] { border-color: #ffffff1f; }
+:root[data-theme="light"] aside .bg-slate-900 { background-color: #ffffff0a; box-shadow: none; }
+:root[data-theme="light"] aside [class*="bg-sky-950"] { background-color: #f9ab101f; }
+:root[data-theme="light"] aside [class*="border-sky-800"] { border-color: #f9ab1047; }
+:root[data-theme="light"] aside [class*="border-l-sky-500"] { border-left-color: var(--eko-gold); }
+:root[data-theme="light"] aside .text-sky-400,
+:root[data-theme="light"] aside .text-sky-300 { color: var(--eko-gold); }
+:root[data-theme="light"] aside [class*="bg-sky-600"] { background-color: var(--eko-gold); color: var(--eko-navy); }
+:root[data-theme="light"] aside [class*="bg-sky-600"]:hover { background-color: var(--eko-gold-hover); }
+:root[data-theme="light"] aside [class*="bg-slate-950"] { background-color: #00000029; border-color: #ffffff1a; }
+:root[data-theme="light"] aside .text-emerald-400 { color: #5fd7a4; }
+:root[data-theme="light"] aside .text-amber-400 { color: var(--eko-gold); }
+:root[data-theme="light"] aside .text-rose-400 { color: #ff8fa3; }
+
+:root[data-theme="light"] header {
+  background-color: #ffffff; border-bottom-color: #dbe7ec; box-shadow: 0 1px 3px #0c25310a;
+}
+:root[data-theme="light"] main .bg-slate-900 {
+  border-color: #dbe7ec; box-shadow: 0 1px 2px #0c25310f, 0 1px 3px #0c25310a;
+}
