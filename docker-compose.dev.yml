@@ -1,0 +1,49 @@
+# Local services for SocialBoard development.
+#
+#   docker compose -f docker-compose.dev.yml --env-file backend/.env up -d db          # PostgreSQL (or use the Docker-free helper, see backend/README.md)
+#   docker compose -f docker-compose.dev.yml --env-file backend/.env up -d redis       # Redis: Celery broker for background syncs (Phase 6)
+#
+# Reads LOCAL_PG_USER / LOCAL_PG_PASSWORD / LOCAL_PG_PORT from backend/.env (copy backend/.env.example);
+# pass it with --env-file so Compose can interpolate them.
+# The init script creates the `socialboard` and `socialboard_test` databases on first start.
+name: socialboard   # fixed project name, independent of the checkout folder's name
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: socialboard-db
+    environment:
+      POSTGRES_USER: ${LOCAL_PG_USER:-socialboard}
+      POSTGRES_PASSWORD: ${LOCAL_PG_PASSWORD:?Set LOCAL_PG_PASSWORD in backend/.env}
+      POSTGRES_DB: socialboard
+      TZ: UTC
+    ports:
+      - "127.0.0.1:${LOCAL_PG_PORT:-5544}:5432"   # bound to localhost only
+    volumes:
+      - socialboard-pgdata:/var/lib/postgresql/data
+      - ./backend/scripts/docker-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d socialboard"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: socialboard-redis
+    # Append-only persistence so queued messages survive a restart (job state itself lives in PostgreSQL).
+    command: ["redis-server", "--appendonly", "yes", "--save", ""]
+    ports:
+      - "127.0.0.1:${LOCAL_REDIS_PORT:-6379}:6379"   # bound to localhost only; no password in local development
+    volumes:
+      - socialboard-redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  socialboard-pgdata:
+  socialboard-redisdata:
