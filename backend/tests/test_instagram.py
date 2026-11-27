@@ -44,6 +44,11 @@ FERNET_KEY = Fernet.generate_key().decode()
 ALL_SCOPES = "instagram_business_basic,instagram_business_manage_insights,instagram_business_manage_comments"
 
 
+def days_ago(days: int, hour: int = 10) -> str:
+    """Graph-style timestamp relative to today, so "recent media" and "last 28 days" windows never age out."""
+    return (utcnow() - timedelta(days=days)).strftime(f"%Y-%m-%dT{hour:02d}:00:00+0000")
+
+
 def ig_settings(db_url: str, **overrides):
     values = dict(
         instagram_app_id="1234567890", instagram_app_secret=APP_SECRET,
@@ -66,11 +71,11 @@ class FakeMeta:
         self.profile = {"id": SCOPED_ID, "user_id": IG_ID, "username": "eko_live_test", "name": "Eko Live (test)",
                         "account_type": "BUSINESS", "followers_count": 1200, "follows_count": 10, "media_count": 3}
         self.media = [
-            {"id": "m1", "media_type": "VIDEO", "permalink": "https://instagram.com/p/m1", "timestamp": "2026-10-05T10:00:00+0000",
+            {"id": "m1", "media_type": "VIDEO", "permalink": "https://instagram.com/p/m1", "timestamp": days_ago(5),
              "like_count": 40, "comments_count": 2, "thumbnail_url": "https://cdn.example/m1.jpg", "caption": "Reel one"},
-            {"id": "m2", "media_type": "IMAGE", "permalink": "https://instagram.com/p/m2", "timestamp": "2026-10-03T10:00:00+0000",
+            {"id": "m2", "media_type": "IMAGE", "permalink": "https://instagram.com/p/m2", "timestamp": days_ago(7),
              "like_count": 12, "comments_count": 0},
-            {"id": "m3", "media_type": "CAROUSEL_ALBUM", "permalink": "https://instagram.com/p/m3", "timestamp": "2026-10-01T10:00:00+0000"},
+            {"id": "m3", "media_type": "CAROUSEL_ALBUM", "permalink": "https://instagram.com/p/m3", "timestamp": days_ago(9)},
         ]
         self.transport = httpx.MockTransport(self.handle)
 
@@ -115,7 +120,7 @@ class FakeMeta:
         if path == f"/v26.0/{IG_ID}/insights":
             if params["metric_type"] == "time_series":
                 return httpx.Response(200, json={"data": [{"name": "reach", "period": "day", "values": [
-                    {"value": 30, "end_time": "2026-10-09T07:00:00+0000"}, {"value": 45, "end_time": "2026-10-10T07:00:00+0000"}]}]})
+                    {"value": 30, "end_time": days_ago(2, 7)}, {"value": 45, "end_time": days_ago(1, 7)}]}]})
             data = [{"name": m, "period": "day", "total_value": {"value": v}} for m, v in (("reach", 900), ("views", 2500), ("likes", 52))
                     if m in params["metric"].split(",")]
             return httpx.Response(200, json={"data": data})  # other metrics: empty → unavailable
@@ -130,10 +135,10 @@ class FakeMeta:
             if path.split("/")[2] != "m1":
                 return httpx.Response(200, json={"data": []})
             return httpx.Response(200, json={"data": [
-                {"id": "c1", "text": "Great!", "timestamp": "2026-10-05T11:00:00+0000", "username": "fan_one", "like_count": 1,
-                 "replies": {"data": [{"id": "c1r", "text": "Thanks", "timestamp": "2026-10-05T12:00:00+0000", "username": "eko_live_test",
+                {"id": "c1", "text": "Great!", "timestamp": days_ago(5, 11), "username": "fan_one", "like_count": 1,
+                 "replies": {"data": [{"id": "c1r", "text": "Thanks", "timestamp": days_ago(5, 12), "username": "eko_live_test",
                                        "parent_id": "c1"}]}},
-                {"id": "c2", "text": "How to apply?", "timestamp": "2026-10-05T11:30:00+0000", "username": "fan_two"},
+                {"id": "c2", "text": "How to apply?", "timestamp": days_ago(5, 11), "username": "fan_two"},
             ]})
         return httpx.Response(404, json={"error": {"message": "Unknown path", "code": 100, "error_subcode": 33}})
 
