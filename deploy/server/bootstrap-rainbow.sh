@@ -14,7 +14,7 @@ install -d -o root -g root -m 0750 /var/log/eko-deploy
 install -d -o root -g root -m 0750 "$nginx_routes"
 install -o root -g root -m 0750 "$script_dir/eko-social-analytics-deploy" "$wrapper"
 
-if ! grep -Fqx 'include /etc/nginx/eko-platform/routes.conf;' /etc/nginx/conf.d/recon.conf; then
+if ! grep -Eq '^[[:space:]]*include[[:space:]]+/etc/nginx/eko-platform/routes\.conf;' /etc/nginx/conf.d/recon.conf; then
   echo "recon.conf is missing the managed route include; add it inside the indev.eko.in HTTPS server before enabling deploys" >&2
   exit 1
 fi
