@@ -113,6 +113,7 @@ jobs:
         working-directory: frontend
         run: npm ci --no-audit --no-fund && npm audit --omit=dev --audit-level=high
       - name: Secret scan (full history)
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # The open-source gitleaks CLI (the gitleaks GitHub Action needs a paid license for organization repos).
+        run: |
+          curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.21.2/gitleaks_8.21.2_linux_x64.tar.gz | tar -xz gitleaks
+          ./gitleaks detect --source . --redact --verbose --exit-code 1
