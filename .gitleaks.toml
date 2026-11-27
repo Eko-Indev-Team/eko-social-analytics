@@ -1,0 +1,12 @@
+# gitleaks configuration: the default rules, plus an allowlist for automated-test folders, whose fixtures use
+# made-up passwords and tokens (e.g. "correct-horse-battery-staple-42"). Real secrets live only in .env files,
+# which are gitignored. Do not widen this allowlist to application code.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Fake credentials in automated tests"
+paths = [
+  '''^backend/tests/''',
+  '''^frontend/src/test/''',
+]
