@@ -3,9 +3,9 @@
 #   ghcr.io/<owner>/<repo>-api   (target: api — FastAPI API, Celery worker/beat, migration job)
 #   ghcr.io/<owner>/<repo>-web   (target: web — React app on nginx, proxies /api to the api container)
 #
-# Tags: `latest` (default branch), the short commit SHA, and the version for `v*` tags. Nothing is deployed to a
-# server here: on the host, run `docker compose pull && docker compose up -d` (see README.md).
-# Uses only the built-in GITHUB_TOKEN; no other secrets. Images are private like the repository.
+# Tags: `latest` (default branch), the short commit SHA, and the version for `v*` tags.
+# The deploy job is enabled only after the Rainbow server bootstrap is complete and the repository variable
+# PRODUCTION_DEPLOY_ENABLED is set to `true`.
 name: Build & push images
 
 on:
@@ -59,8 +59,60 @@ jobs:
           context: .
           file: Dockerfile
           target: ${{ matrix.target }}
+          build-args: |
+            VITE_BASE_PATH=/eko-social-analytics/
+            VITE_API_BASE_URL=/eko-social-analytics/api/v1
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=${{ matrix.target }}
           cache-to: type=gha,mode=max,scope=${{ matrix.target }}
+
+  deploy:
+    name: Deploy to production via Rainbow
+    if: vars.PRODUCTION_DEPLOY_ENABLED == 'true'
+    needs: images
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+    steps:
+      - name: Configure SSH trust
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_HOST"
+          test -n "$DEPLOY_SSH_KEY"
+          test -n "$DEPLOY_KNOWN_HOSTS"
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$DEPLOY_SSH_KEY" > "$HOME/.ssh/rainbow_deploy"
+          chmod 600 "$HOME/.ssh/rainbow_deploy"
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 644 "$HOME/.ssh/known_hosts"
+          echo "DEPLOY_PORT=${DEPLOY_PORT:-22}" >> "$GITHUB_ENV"
+
+      - name: Deploy immutable release
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          short_sha="${GITHUB_SHA:0:7}"
+          ssh -i "$HOME/.ssh/rainbow_deploy" \
+            -p "$DEPLOY_PORT" \
+            -o IdentitiesOnly=yes \
+            -o BatchMode=yes \
+            rainbow@"$DEPLOY_HOST" \
+            sudo -n /usr/local/sbin/eko-social-analytics-deploy \
+              --release "$short_sha" \
+              --commit "$GITHUB_SHA" \
+              --repo "$GITHUB_REPOSITORY" \
+              --actor "$GITHUB_ACTOR" \
+              --run-id "$GITHUB_RUN_ID"

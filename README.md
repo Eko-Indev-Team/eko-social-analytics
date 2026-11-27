@@ -10,22 +10,16 @@ Eko's internal dashboard for recruiting SBI kiosk / CSP operators through Instag
 
 Stack: FastAPI · SQLAlchemy/Alembic · PostgreSQL · Celery + Redis · React + TypeScript + Vite + Tailwind · 9 interface languages.
 
-## Deploy (Docker)
+## Deploy (GitHub Actions + Rainbow)
 
 `.github/workflows/deploy.yml` builds two images from the root `Dockerfile` on every push to `main` and pushes them to GitHub Container Registry:
 `ghcr.io/eko-indev-team/eko-social-analytics-api` and `ghcr.io/eko-indev-team/eko-social-analytics-web` (tags `latest`, short SHA, and `v*` versions).
 
-On the server (Docker Compose v2):
+After the one-time Rainbow server bootstrap, set the repository variable `PRODUCTION_DEPLOY_ENABLED=true`. A merge to `main` then deploys the immutable short-SHA release automatically through the restricted Rainbow wrapper. The workflow records the GitHub actor, commit, workflow run and release on the server.
 
-```bash
-echo <GitHub token with read:packages> | docker login ghcr.io -u <github-user> --password-stdin   # images are private
-cp .env.example .env            # fill in passwords, SECRET_KEY, FRONTEND_URL, Meta/AI settings — never commit .env
-docker compose pull
-docker compose up -d            # migrate runs first, then api / worker / beat / web
-docker compose exec api python -m scripts.create_owner --email you@eko.co.in   # first login
-```
+The server keeps production configuration in `/srv/apps/eko-social-analytics/.env`; it is never committed. The wrapper allocates a free loopback web port, runs the Compose migration and services, checks `/healthz` and internal `/ready`, updates the `/eko-social-analytics/` Nginx route and restores the previous release if verification fails.
 
-Only `web` publishes a port (default `127.0.0.1:8080`); put a TLS reverse proxy in front of it. Details: [docs/OPERATIONS.md](docs/OPERATIONS.md).
+For the one-time root/admin installation, see [`deploy/server/bootstrap-rainbow.sh`](deploy/server/bootstrap-rainbow.sh). Only `web` is reachable through the reverse proxy; API, PostgreSQL and Redis remain on the private Compose network. Details: [docs/OPERATIONS.md](docs/OPERATIONS.md).
 
 ## Repository layout
 
@@ -120,7 +114,7 @@ cd backend && .venv/Scripts/ruff check .             # lint gate used in CI
 cd backend && .venv/Scripts/alembic upgrade head && .venv/Scripts/alembic check   # apply migrations, then check model ↔ migration drift
 ```
 
-## Production deployment (Phase 8)
+## Production deployment
 
 The deployment is container-based: `docker-compose.yml` runs these services:
 
@@ -133,11 +127,7 @@ The deployment is container-based: `docker-compose.yml` runs these services:
 
 Only `web` publishes a port. Put TLS in front of it.
 
-```bash
-cp .env.example .env      # fill in real values; never commit
-docker compose pull       # or build locally: docker compose build
-docker compose up -d
-```
+The normal production trigger is a merge to `main`. Manual Compose commands are for local troubleshooting only; production deployments go through GitHub Actions and Rainbow.
 
 | Document | Contents |
 | --- | --- |
