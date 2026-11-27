@@ -48,7 +48,8 @@ RUN npm ci --no-audit --no-fund
 COPY frontend/ .
 ARG VITE_DATA_SOURCE=api
 ARG VITE_API_BASE_URL=/api/v1
-ENV VITE_DATA_SOURCE=${VITE_DATA_SOURCE} VITE_API_BASE_URL=${VITE_API_BASE_URL}
+ARG VITE_BASE_PATH=/
+ENV VITE_DATA_SOURCE=${VITE_DATA_SOURCE} VITE_API_BASE_URL=${VITE_API_BASE_URL} VITE_BASE_PATH=${VITE_BASE_PATH}
 RUN if [ "$VITE_DATA_SOURCE" = "demo" ]; then npm run build; else npm run build:api; fi
 
 FROM nginxinc/nginx-unprivileged:1.27-alpine AS web

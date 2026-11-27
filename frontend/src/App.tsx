@@ -7,7 +7,8 @@ export function withProviders(routeList: RouteObject[]): RouteObject[] {
   return [{ element: <Providers><Outlet /></Providers>, children: routeList }];
 }
 
-const router = createBrowserRouter(withProviders(routes));
+const basename = import.meta.env.BASE_URL.replace(/\/$/, '') || '/';
+const router = createBrowserRouter(withProviders(routes), { basename });
 
 export default function App() {
   return <RouterProvider router={router} />;

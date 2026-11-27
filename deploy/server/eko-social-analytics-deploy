@@ -1,0 +1,143 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+APP_NAME="eko-social-analytics"
+APP_ROOT="/srv/apps/${APP_NAME}"
+RELEASE_ROOT="${APP_ROOT}/releases"
+RAW_ROOT="https://raw.githubusercontent.com/Eko-Indev-Team/eko-social-analytics"
+# The host's HTTPS vhost includes this managed directory from inside the
+# `indev.eko.in` server block.  Keep the app route as a location-only snippet;
+# a standalone conf.d file would be parsed at http level and fail nginx -t.
+NGINX_ROUTE="/etc/nginx/eko-platform/routes.d/${APP_NAME}.conf"
+AUDIT_LOG="/var/log/eko-deploy/${APP_NAME}.jsonl"
+
+usage() {
+  echo "usage: $0 --release SHORT_SHA --commit FULL_SHA --repo OWNER/REPO --actor USER --run-id ID" >&2
+  exit 2
+}
+
+release=""
+commit=""
+repo=""
+actor=""
+run_id=""
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --release) release="${2:-}"; shift 2 ;;
+    --commit) commit="${2:-}"; shift 2 ;;
+    --repo) repo="${2:-}"; shift 2 ;;
+    --actor) actor="${2:-}"; shift 2 ;;
+    --run-id) run_id="${2:-}"; shift 2 ;;
+    *) usage ;;
+  esac
+done
+
+[ "${EUID}" -eq 0 ] || { echo "must run as root" >&2; exit 1; }
+[ "$repo" = "Eko-Indev-Team/eko-social-analytics" ] || { echo "repository is not allowlisted" >&2; exit 1; }
+[[ "$release" =~ ^[0-9a-f]{7,40}$ ]] || { echo "invalid release tag" >&2; exit 1; }
+[[ "$commit" =~ ^[0-9a-f]{40}$ ]] || { echo "invalid commit SHA" >&2; exit 1; }
+[[ "$actor" =~ ^[A-Za-z0-9._-]{1,80}$ ]] || { echo "invalid actor" >&2; exit 1; }
+[[ "$run_id" =~ ^[0-9]+$ ]] || { echo "invalid workflow run id" >&2; exit 1; }
+
+command -v docker >/dev/null || { echo "docker is not installed" >&2; exit 1; }
+command -v curl >/dev/null || { echo "curl is not installed" >&2; exit 1; }
+[ -f "${APP_ROOT}/.env" ] || { echo "missing ${APP_ROOT}/.env; provision secrets before deploying" >&2; exit 1; }
+
+install -d -o rainbow -g rainbow -m 0750 "${APP_ROOT}" "${RELEASE_ROOT}"
+install -d -o root -g root -m 0750 "$(dirname "$AUDIT_LOG")"
+install -d -o root -g root -m 0750 "$(dirname "$NGINX_ROUTE")"
+
+port_is_used() {
+  ss -ltnH 2>/dev/null | awk '{print $4}' | grep -Eq ":${1}$"
+}
+
+port_file="${APP_ROOT}/.host-port"
+if [ -s "$port_file" ]; then
+  web_port="$(tr -dc '0-9' < "$port_file")"
+else
+  web_port=""
+  for candidate in $(seq 18080 18999); do
+    if ! port_is_used "$candidate"; then
+      web_port="$candidate"
+      break
+    fi
+  done
+  [ -n "$web_port" ] || { echo "no free application port available" >&2; exit 1; }
+  printf '%s\n' "$web_port" > "$port_file"
+  chown rainbow:rainbow "$port_file"
+  chmod 0640 "$port_file"
+fi
+
+release_dir="${RELEASE_ROOT}/${release}"
+previous_link="${APP_ROOT}/current-release"
+previous_dir=""
+if [ -L "$previous_link" ]; then
+  previous_dir="$(readlink -f "$previous_link")"
+fi
+
+rollback() {
+  if [ -n "$previous_dir" ] && [ -f "${previous_dir}/docker-compose.yml" ]; then
+    echo "deployment failed; restoring previous release ${previous_dir##*/}" >&2
+    export API_IMAGE="ghcr.io/eko-indev-team/eko-social-analytics-api:${previous_dir##*/}"
+    export WEB_IMAGE="ghcr.io/eko-indev-team/eko-social-analytics-web:${previous_dir##*/}"
+    export WEB_PORT="$web_port"
+    docker compose --project-name "$APP_NAME" --env-file "${APP_ROOT}/.env" -f "${previous_dir}/docker-compose.yml" up -d >/dev/null 2>&1 || true
+  fi
+}
+
+trap rollback ERR
+install -d -o rainbow -g rainbow -m 0750 "$release_dir"
+curl --fail --silent --show-error --location "${RAW_ROOT}/${commit}/docker-compose.yml" -o "${release_dir}/docker-compose.yml"
+curl --fail --silent --show-error --location "${RAW_ROOT}/${commit}/deploy/app.yml" -o "${release_dir}/app.yml"
+chown -R rainbow:rainbow "$release_dir"
+
+export API_IMAGE="ghcr.io/eko-indev-team/eko-social-analytics-api:${release}"
+export WEB_IMAGE="ghcr.io/eko-indev-team/eko-social-analytics-web:${release}"
+export WEB_BIND="127.0.0.1"
+export WEB_PORT="$web_port"
+export VITE_BASE_PATH="/eko-social-analytics/"
+export VITE_API_BASE_URL="/eko-social-analytics/api/v1"
+
+docker compose --project-name "$APP_NAME" --env-file "${APP_ROOT}/.env" -f "${release_dir}/docker-compose.yml" config --quiet
+docker compose --project-name "$APP_NAME" --env-file "${APP_ROOT}/.env" -f "${release_dir}/docker-compose.yml" pull
+docker compose --project-name "$APP_NAME" --env-file "${APP_ROOT}/.env" -f "${release_dir}/docker-compose.yml" up -d
+
+healthy=""
+for _ in $(seq 1 60); do
+  if curl --fail --silent --show-error --max-time 3 "http://127.0.0.1:${web_port}/healthz" >/dev/null; then
+    healthy="yes"
+    break
+  fi
+  sleep 2
+done
+[ "$healthy" = "yes" ] || { echo "web health check failed" >&2; exit 1; }
+
+docker compose --project-name "$APP_NAME" --env-file "${APP_ROOT}/.env" -f "${release_dir}/docker-compose.yml" exec -T api python -c \
+  "import urllib.request; raise SystemExit(0 if urllib.request.urlopen('http://127.0.0.1:8000/ready', timeout=5).status == 200 else 1)"
+
+tmp_nginx="${NGINX_ROUTE}.tmp"
+cat > "$tmp_nginx" <<EOF
+# Managed by eko-social-analytics-deploy. Do not edit manually.
+location = /eko-social-analytics { return 301 /eko-social-analytics/; }
+location /eko-social-analytics/ {
+    proxy_pass http://127.0.0.1:${web_port}/;
+    proxy_http_version 1.1;
+    proxy_set_header Host \$host;
+    proxy_set_header X-Real-IP \$remote_addr;
+    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto \$scheme;
+    proxy_set_header X-Forwarded-Prefix /eko-social-analytics;
+    proxy_read_timeout 60s;
+}
+EOF
+install -o root -g root -m 0644 "$tmp_nginx" "$NGINX_ROUTE"
+rm -f "$tmp_nginx"
+nginx -t
+systemctl reload nginx
+
+ln -sfn "$release_dir" "$previous_link"
+chown -h rainbow:rainbow "$previous_link"
+printf '{"app":"%s","release":"%s","commit":"%s","repo":"%s","actor":"%s","run_id":"%s","web_port":%s,"status":"success","timestamp":"%s"}\n' \
+  "$APP_NAME" "$release" "$commit" "$repo" "$actor" "$run_id" "$web_port" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$AUDIT_LOG"
+trap - ERR
+echo "deployed ${APP_NAME} ${release} on ${web_port}"

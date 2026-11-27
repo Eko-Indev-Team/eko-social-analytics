@@ -1,6 +1,6 @@
 # SocialBoard operations runbook
 
-This covers the production Compose deployment (`docker-compose.yml`). For local development, see the root README.
+This covers the production Compose deployment (`docker-compose.yml`). In the standard flow, GitHub Actions invokes the restricted Rainbow wrapper after a merge to `main`; direct Compose commands are for operator troubleshooting only. For local development, see the root README.
 
 ## Architecture
 
